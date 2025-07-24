@@ -1,12 +1,16 @@
 import React, { useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { CartProvider } from './contexts/CartContext';
 import Navbar from './components/Navbar';
 import Homepage from './pages/Homepage';
 import CategoryPage from './pages/CategoryPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import OTPVerificationPage from './pages/OTPVerificationPage';
 import RequestMedicine from './pages/RequestMedicine';
 import Dashboard from './pages/Dashboard';
+import UpdateMedicinePrices from './pages/UpdateMedicinePrices';
+import DoctorRequests from './pages/DoctorRequests';
 import SearchResults from './pages/SearchResults';
 import OffersPage from './pages/OffersPage';
 
@@ -16,6 +20,7 @@ interface AuthContextType {
   login: (userData: any) => void;
   logout: () => void;
   isAdmin: boolean;
+  isDoctor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -95,6 +100,7 @@ function App() {
   };
 
   const isAdmin = user?.role === 'admin' || user?.role === 'doctor';
+  const isDoctor = user?.role === 'doctor';
 
   // Check for stored user on app load
   React.useEffect(() => {
@@ -105,27 +111,36 @@ function App() {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin, isDoctor }}>
       <LanguageContext.Provider value={{ language, toggleLanguage, t }}>
-        <Router>
-          <div className={`min-h-screen bg-gray-50 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
-            <Navbar />
-            <Routes>
-              <Route path="/" element={<Homepage />} />
-              <Route path="/category/:categoryName" element={<CategoryPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/request-medicine" element={
-                user ? <RequestMedicine /> : <Navigate to="/login" />
-              } />
-              <Route path="/dashboard" element={
-                isAdmin ? <Dashboard /> : <Navigate to="/login" />
-              } />
-              <Route path="/search" element={<SearchResults />} />
-              <Route path="/offers" element={<OffersPage />} />
-            </Routes>
-          </div>
-        </Router>
+        <CartProvider>
+          <Router>
+            <div className={`min-h-screen bg-gray-50 ${language === 'ar' ? 'rtl' : 'ltr'}`}>
+              <Navbar />
+              <Routes>
+                <Route path="/" element={<Homepage />} />
+                <Route path="/category/:categoryName" element={<CategoryPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/verify-otp" element={<OTPVerificationPage />} />
+                <Route path="/request-medicine" element={
+                  user ? <RequestMedicine /> : <Navigate to="/login" />
+                } />
+                <Route path="/dashboard" element={
+                  isAdmin ? <Dashboard /> : <Navigate to="/login" />
+                } />
+                <Route path="/update-prices" element={
+                  isAdmin ? <UpdateMedicinePrices /> : <Navigate to="/login" />
+                } />
+                <Route path="/doctor-requests" element={
+                  user?.role === 'admin' ? <DoctorRequests /> : <Navigate to="/login" />
+                } />
+                <Route path="/search" element={<SearchResults />} />
+                <Route path="/offers" element={<OffersPage />} />
+              </Routes>
+            </div>
+          </Router>
+        </CartProvider>
       </LanguageContext.Provider>
     </AuthContext.Provider>
   );

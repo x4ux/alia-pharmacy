@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FunnelIcon, Squares2X2Icon, ListBulletIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../App';
+import { useCart } from '../contexts/CartContext';
 
 const CategoryPage: React.FC = () => {
   const { categoryName } = useParams<{ categoryName: string }>();
   const { language } = useLanguage();
+  const { addToCart } = useCart();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('name');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
@@ -110,6 +112,21 @@ const CategoryPage: React.FC = () => {
 
   const currentTitle = categoryName ? categoryTitles[categoryName] : null;
 
+  const handleAddToCart = (product: typeof sampleProducts[0]) => {
+    if (!product.inStock) return;
+    
+    addToCart({
+      id: product.id,
+      name: product.name,
+      nameAr: product.nameAr,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      brand: product.brand,
+      inStock: product.inStock
+    });
+  };
+
   const ProductCard = ({ product }: { product: typeof sampleProducts[0] }) => (
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
       <div className="relative">
@@ -163,6 +180,7 @@ const CategoryPage: React.FC = () => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             disabled={!product.inStock}
+            onClick={() => handleAddToCart(product)}
           >
             {language === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
           </button>

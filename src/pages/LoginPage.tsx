@@ -21,22 +21,54 @@ const LoginPage: React.FC = () => {
 
     // Simulate API call
     setTimeout(() => {
-      // Mock login logic
-      const userData = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: formData.userType === 'customer' ? 'Ahmed Mohamed' : 'Dr. Sarah Ahmed',
-        email: formData.email,
-        role: formData.userType,
-        phone: '01234567890'
-      };
+      // Check if user exists and is approved
+      let userData = null;
       
-      login(userData);
+      // Check approved doctors
+      const approvedDoctors = JSON.parse(localStorage.getItem('approvedDoctors') || '[]');
+      const doctor = approvedDoctors.find((doc: any) => doc.email === formData.email);
+      
+      if (doctor && formData.userType === 'doctor') {
+        userData = doctor;
+      } else if (formData.userType === 'customer') {
+        // Mock customer login
+        userData = {
+          id: Math.random().toString(36).substr(2, 9),
+          name: 'Ahmed Mohamed',
+          email: formData.email,
+          role: 'customer',
+          phone: '01234567890',
+          address: 'Cairo, Egypt',
+          status: 'active',
+          verified: true
+        };
+      } else if (formData.userType === 'admin') {
+        // Mock admin login
+        userData = {
+          id: 'admin-1',
+          name: 'Admin User',
+          email: formData.email,
+          role: 'admin',
+          phone: '01234567890',
+          status: 'active',
+          verified: true
+        };
+      }
+      
+      if (userData) {
+        login(userData);
+      } else {
+        alert(language === 'ar' 
+          ? 'بيانات الدخول غير صحيحة أو الحساب غير مفعل'
+          : 'Invalid credentials or account not activated'
+        );
+      }
       setIsLoading(false);
       
       // Redirect based on user type
-      if (formData.userType === 'admin' || formData.userType === 'doctor') {
+      if (userData && (userData.role === 'admin' || userData.role === 'doctor')) {
         navigate('/dashboard');
-      } else {
+      } else if (userData) {
         navigate('/');
       }
     }, 1000);

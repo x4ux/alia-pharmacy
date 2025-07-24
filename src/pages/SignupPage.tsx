@@ -8,10 +8,10 @@ const SignupPage: React.FC = () => {
     name: '',
     email: '',
     phone: '',
+    address: '',
     password: '',
     confirmPassword: '',
     userType: 'customer',
-    address: '',
     licenseNumber: '' // For doctors
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -71,25 +71,25 @@ const SignupPage: React.FC = () => {
 
     // Simulate API call
     setTimeout(() => {
-      const userData = {
+      // Store signup data temporarily for OTP verification
+      const signupData = {
+        ...formData,
         id: Math.random().toString(36).substr(2, 9),
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
         role: formData.userType,
-        address: formData.address,
-        licenseNumber: formData.licenseNumber
+        status: formData.userType === 'doctor' ? 'pending' : 'active'
       };
       
-      login(userData);
-      setIsLoading(false);
+      localStorage.setItem('pendingSignup', JSON.stringify(signupData));
       
-      // Redirect based on user type
-      if (formData.userType === 'admin' || formData.userType === 'doctor') {
-        navigate('/dashboard');
-      } else {
-        navigate('/');
-      }
+      // Generate and store OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      localStorage.setItem('signupOTP', otp);
+      localStorage.setItem('otpEmail', formData.email);
+      
+      console.log('OTP sent to email:', formData.email, 'OTP:', otp);
+      
+      setIsLoading(false);
+      navigate('/verify-otp');
     }, 1000);
   };
 
@@ -206,6 +206,26 @@ const SignupPage: React.FC = () => {
               {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
             </div>
 
+            {/* Address */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                {language === 'ar' ? 'العنوان' : 'Address'} *
+              </label>
+              <textarea
+                id="address"
+                name="address"
+                rows={3}
+                required
+                value={formData.address}
+                onChange={handleInputChange}
+                className={`mt-1 block w-full px-3 py-2 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  errors.address ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder={language === 'ar' ? 'أدخل عنوانك الكامل' : 'Enter your full address'}
+              />
+              {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+            </div>
+
             {/* License Number (for doctors) */}
             {formData.userType === 'doctor' && (
               <div>
@@ -227,22 +247,6 @@ const SignupPage: React.FC = () => {
                 {errors.licenseNumber && <p className="mt-1 text-sm text-red-600">{errors.licenseNumber}</p>}
               </div>
             )}
-
-            {/* Address */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                {language === 'ar' ? 'العنوان' : 'Address'}
-              </label>
-              <textarea
-                id="address"
-                name="address"
-                rows={3}
-                value={formData.address}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder={language === 'ar' ? 'أدخل عنوانك الكامل' : 'Enter your full address'}
-              />
-            </div>
 
             {/* Password */}
             <div>
@@ -338,10 +342,10 @@ const SignupPage: React.FC = () => {
               {isLoading ? (
                 <div className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 rtl:mr-0 rtl:ml-2"></div>
-                  {language === 'ar' ? 'جار إنشاء الحساب...' : 'Creating account...'}
+                  {language === 'ar' ? 'جار إرسال رمز التحقق...' : 'Sending verification code...'}
                 </div>
               ) : (
-                language === 'ar' ? 'إنشاء حساب' : 'Create Account'
+                language === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code'
               )}
             </button>
           </div>

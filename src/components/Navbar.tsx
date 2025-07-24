@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MagnifyingGlassIcon, UserIcon, ShoppingBagIcon, Bars3Icon, XMarkIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, UserIcon, ShoppingBagIcon, Bars3Icon, XMarkIcon, GlobeAltIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { useAuth, useLanguage } from '../App';
+import { useCart } from '../contexts/CartContext';
+import Cart from './Cart';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { user, logout, isAdmin } = useAuth();
   const { language, toggleLanguage, t } = useLanguage();
+  const { getTotalItems } = useCart();
   const navigate = useNavigate();
 
   const categories = [
@@ -90,6 +94,19 @@ const Navbar: React.FC = () => {
 
           {/* User Actions */}
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            {/* Cart Button */}
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <ShoppingCartIcon className="h-6 w-6" />
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-1 -right-1 rtl:-right-auto rtl:-left-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </button>
+
             {user ? (
               <div className="flex items-center space-x-4 rtl:space-x-reverse">
                 <span className="text-sm font-medium text-gray-700">
@@ -245,6 +262,9 @@ const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Cart Component */}
+      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>
   );
 };

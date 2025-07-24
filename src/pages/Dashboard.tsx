@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ClipboardDocumentListIcon, 
   UserGroupIcon, 
@@ -7,7 +8,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   EyeIcon,
-  PhoneIcon
+  PhoneIcon,
+  CurrencyDollarIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 import { useAuth, useLanguage } from '../App';
 
@@ -31,6 +34,7 @@ const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState('requests');
+  const [activeOrderTab, setActiveOrderTab] = useState('medicine-requests');
   const [selectedRequest, setSelectedRequest] = useState<MedicineRequest | null>(null);
 
   // Mock data for medicine requests
@@ -78,6 +82,12 @@ const Dashboard: React.FC = () => {
       userId: 'user3'
     }
   ]);
+
+  // Load cart orders from localStorage
+  const [cartOrders, setCartOrders] = useState(() => {
+    const orders = localStorage.getItem('pharmacy_orders');
+    return orders ? JSON.parse(orders) : [];
+  });
 
   const handleStatusChange = (requestId: string, newStatus: MedicineRequest['status']) => {
     setRequests(prev => 
@@ -134,7 +144,9 @@ const Dashboard: React.FC = () => {
     totalRequests: requests.length,
     pendingRequests: requests.filter(r => r.status === 'pending').length,
     approvedRequests: requests.filter(r => r.status === 'approved').length,
-    deliveredRequests: requests.filter(r => r.status === 'delivered').length
+    deliveredRequests: requests.filter(r => r.status === 'delivered').length,
+    totalCartOrders: cartOrders.length,
+    pendingCartOrders: cartOrders.filter((o: any) => o.status === 'pending').length
   };
 
   return (
@@ -154,15 +166,27 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-md">
             <div className="flex items-center">
               <ClipboardDocumentListIcon className="h-8 w-8 text-blue-600" />
               <div className="ml-4 rtl:ml-0 rtl:mr-4">
                 <p className="text-sm font-medium text-gray-600">
-                  {language === 'ar' ? 'إجمالي الطلبات' : 'Total Requests'}
+                  {language === 'ar' ? 'طلبات الأدوية' : 'Medicine Requests'}
                 </p>
                 <p className="text-2xl font-bold text-gray-900">{stats.totalRequests}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center">
+              <CurrencyDollarIcon className="h-8 w-8 text-green-600" />
+              <div className="ml-4 rtl:ml-0 rtl:mr-4">
+                <p className="text-sm font-medium text-gray-600">
+                  {language === 'ar' ? 'طلبات السلة' : 'Cart Orders'}
+                </p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalCartOrders}</p>
               </div>
             </div>
           </div>
@@ -209,14 +233,24 @@ const Dashboard: React.FC = () => {
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8 rtl:space-x-reverse px-6">
               <button
-                onClick={() => setActiveTab('requests')}
+                onClick={() => setActiveTab('orders')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'requests'
+                  activeTab === 'orders'
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {language === 'ar' ? 'طلبات الأدوية' : 'Medicine Requests'}
+                {language === 'ar' ? 'الطلبات' : 'Orders'}
+              </button>
+              <button
+                onClick={() => setActiveTab('management')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'management'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {language === 'ar' ? 'الإدارة' : 'Management'}
               </button>
               <button
                 onClick={() => setActiveTab('customers')}
@@ -232,104 +266,205 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="p-6">
-            {activeTab === 'requests' && (
+            {activeTab === 'orders' && (
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {language === 'ar' ? 'طلبات الأدوية' : 'Medicine Requests'}
-                  </h2>
-                  <select className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <option value="all">
-                      {language === 'ar' ? 'جميع الطلبات' : 'All Requests'}
-                    </option>
-                    <option value="pending">
-                      {language === 'ar' ? 'في الانتظار' : 'Pending'}
-                    </option>
-                    <option value="approved">
-                      {language === 'ar' ? 'مقبولة' : 'Approved'}
-                    </option>
-                  </select>
+                {/* Order Type Tabs */}
+                <div className="border-b border-gray-200 mb-6">
+                  <nav className="-mb-px flex space-x-8 rtl:space-x-reverse">
+                    <button
+                      onClick={() => setActiveOrderTab('medicine-requests')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeOrderTab === 'medicine-requests'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {language === 'ar' ? 'طلبات الأدوية' : 'Medicine Requests'}
+                    </button>
+                    <button
+                      onClick={() => setActiveOrderTab('cart-orders')}
+                      className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeOrderTab === 'cart-orders'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      {language === 'ar' ? 'طلبات السلة' : 'Cart Orders'}
+                    </button>
+                  </nav>
                 </div>
 
-                <div className="space-y-4">
-                  {requests.map((request) => (
-                    <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 rtl:space-x-reverse mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{request.fullName}</h3>
-                            {getStatusBadge(request.status)}
+                {activeOrderTab === 'medicine-requests' && (
+                  <div className="space-y-4">
+                    {requests.map((request) => (
+                      <div key={request.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 rtl:space-x-reverse mb-2">
+                              <h3 className="text-lg font-semibold text-gray-900">{request.fullName}</h3>
+                              {getStatusBadge(request.status)}
+                            </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
+                              <div>
+                                <p><strong>{language === 'ar' ? 'الدواء:' : 'Medicine:'}</strong> {request.medicineName}</p>
+                                <p><strong>{language === 'ar' ? 'الكمية:' : 'Quantity:'}</strong> {request.quantity}</p>
+                                <p><strong>{language === 'ar' ? 'الهاتف:' : 'Phone:'}</strong> {request.phoneNumber}</p>
+                              </div>
+                              <div>
+                                <p><strong>{language === 'ar' ? 'المحافظة:' : 'Governorate:'}</strong> {request.governorate}</p>
+                                <p><strong>{language === 'ar' ? 'المدينة:' : 'City:'}</strong> {request.city}</p>
+                                <p><strong>{language === 'ar' ? 'التاريخ:' : 'Date:'}</strong> {formatDateTime(request.timestamp)}</p>
+                              </div>
+                            </div>
+                            
+                            {request.notes && (
+                              <p className="mt-2 text-sm text-gray-700">
+                                <strong>{language === 'ar' ? 'ملاحظات:' : 'Notes:'}</strong> {request.notes}
+                              </p>
+                            )}
                           </div>
                           
-                          <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
-                            <div>
-                              <p><strong>{language === 'ar' ? 'الدواء:' : 'Medicine:'}</strong> {request.medicineName}</p>
-                              <p><strong>{language === 'ar' ? 'الكمية:' : 'Quantity:'}</strong> {request.quantity}</p>
-                              <p><strong>{language === 'ar' ? 'الهاتف:' : 'Phone:'}</strong> {request.phoneNumber}</p>
-                            </div>
-                            <div>
-                              <p><strong>{language === 'ar' ? 'المحافظة:' : 'Governorate:'}</strong> {request.governorate}</p>
-                              <p><strong>{language === 'ar' ? 'المدينة:' : 'City:'}</strong> {request.city}</p>
-                              <p><strong>{language === 'ar' ? 'التاريخ:' : 'Date:'}</strong> {formatDateTime(request.timestamp)}</p>
-                            </div>
-                          </div>
-                          
-                          {request.notes && (
-                            <p className="mt-2 text-sm text-gray-700">
-                              <strong>{language === 'ar' ? 'ملاحظات:' : 'Notes:'}</strong> {request.notes}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4">
-                          <button
-                            onClick={() => setSelectedRequest(request)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title={language === 'ar' ? 'عرض التفاصيل' : 'View Details'}
-                          >
-                            <EyeIcon className="h-5 w-5" />
-                          </button>
-                          
-                          <a
-                            href={`tel:${request.phoneNumber}`}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title={language === 'ar' ? 'اتصال' : 'Call'}
-                          >
-                            <PhoneIcon className="h-5 w-5" />
-                          </a>
-                          
-                          {request.status === 'pending' && (
-                            <>
-                              <button
-                                onClick={() => handleStatusChange(request.id, 'approved')}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                title={language === 'ar' ? 'قبول' : 'Approve'}
-                              >
-                                <CheckCircleIcon className="h-5 w-5" />
-                              </button>
-                              
-                              <button
-                                onClick={() => handleStatusChange(request.id, 'rejected')}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                title={language === 'ar' ? 'رفض' : 'Reject'}
-                              >
-                                <XCircleIcon className="h-5 w-5" />
-                              </button>
-                            </>
-                          )}
-                          
-                          {request.status === 'approved' && (
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse ml-4 rtl:ml-0 rtl:mr-4">
                             <button
-                              onClick={() => handleStatusChange(request.id, 'delivered')}
-                              className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                              onClick={() => setSelectedRequest(request)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              title={language === 'ar' ? 'عرض التفاصيل' : 'View Details'}
                             >
-                              {language === 'ar' ? 'تم التوصيل' : 'Mark Delivered'}
+                              <EyeIcon className="h-5 w-5" />
                             </button>
-                          )}
+                            
+                            <a
+                              href={`tel:${request.phoneNumber}`}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title={language === 'ar' ? 'اتصال' : 'Call'}
+                            >
+                              <PhoneIcon className="h-5 w-5" />
+                            </a>
+                            
+                            {request.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleStatusChange(request.id, 'approved')}
+                                  className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                  title={language === 'ar' ? 'قبول' : 'Approve'}
+                                >
+                                  <CheckCircleIcon className="h-5 w-5" />
+                                </button>
+                                
+                                <button
+                                  onClick={() => handleStatusChange(request.id, 'rejected')}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title={language === 'ar' ? 'رفض' : 'Reject'}
+                                >
+                                  <XCircleIcon className="h-5 w-5" />
+                                </button>
+                              </>
+                            )}
+                            
+                            {request.status === 'approved' && (
+                              <button
+                                onClick={() => handleStatusChange(request.id, 'delivered')}
+                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                              >
+                                {language === 'ar' ? 'تم التوصيل' : 'Mark Delivered'}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {activeOrderTab === 'cart-orders' && (
+                  <div className="space-y-4">
+                    {cartOrders.map((order: any) => (
+                      <div key={order.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{order.customerName}</h3>
+                            <p className="text-sm text-gray-600">{order.customerPhone} • {order.customerEmail}</p>
+                          </div>
+                          {getStatusBadge(order.status)}
+                        </div>
+                        
+                        <div className="mb-4">
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            {language === 'ar' ? 'المنتجات:' : 'Products:'}
+                          </h4>
+                          <div className="space-y-2">
+                            {order.items.map((item: any, index: number) => (
+                              <div key={index} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
+                                <span>{item.name} × {item.quantity}</span>
+                                <span className="font-medium">{item.totalPrice} EGP</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                          <div className="text-sm text-gray-600">
+                            <p><strong>{language === 'ar' ? 'العنوان:' : 'Address:'}</strong> {order.customerAddress}</p>
+                            <p><strong>{language === 'ar' ? 'التاريخ:' : 'Date:'}</strong> {formatDateTime(order.timestamp)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-blue-600">
+                              {language === 'ar' ? 'المجموع:' : 'Total:'} {order.totalPrice} EGP
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {cartOrders.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        {language === 'ar' ? 'لا توجد طلبات سلة' : 'No cart orders'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'management' && (
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {language === 'ar' ? 'أدوات الإدارة' : 'Management Tools'}
+                </h2>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Link
+                    to="/update-prices"
+                    className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                  >
+                    <div className="text-center">
+                      <CurrencyDollarIcon className="h-12 w-12 text-gray-400 group-hover:text-blue-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
+                        {language === 'ar' ? 'تحديث أسعار الأدوية' : 'Update Medicine Prices'}
+                      </h3>
+                      <p className="text-gray-600 mt-2">
+                        {language === 'ar' ? 'إدارة وتحديث أسعار جميع الأدوية' : 'Manage and update prices for all medicines'}
+                      </p>
                     </div>
-                  ))}
+                  </Link>
+                  
+                  {user?.role === 'admin' && (
+                    <Link
+                      to="/doctor-requests"
+                      className="bg-white border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-green-500 hover:bg-green-50 transition-colors group"
+                    >
+                      <div className="text-center">
+                        <UserPlusIcon className="h-12 w-12 text-gray-400 group-hover:text-green-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-green-600">
+                          {language === 'ar' ? 'طلبات الأطباء' : 'Doctor Requests'}
+                        </h3>
+                        <p className="text-gray-600 mt-2">
+                          {language === 'ar' ? 'مراجعة وموافقة طلبات الأطباء الجدد' : 'Review and approve new doctor requests'}
+                        </p>
+                      </div>
+                    </Link>
+                  )}
                 </div>
               </div>
             )}

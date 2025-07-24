@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '../App';
+import { useCart } from '../contexts/CartContext';
 
 const SearchResults: React.FC = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const { language } = useLanguage();
+  const { addToCart } = useCart();
   const [isLoading, setIsLoading] = useState(true);
 
   // Mock search results
@@ -85,6 +87,21 @@ const SearchResults: React.FC = () => {
     }, 1000);
   }, [query]);
 
+  const handleAddToCart = (product: typeof mockResults[0]) => {
+    if (!product.inStock) return;
+    
+    addToCart({
+      id: product.id,
+      name: product.name,
+      nameAr: product.nameAr,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image,
+      brand: product.brand,
+      inStock: product.inStock
+    });
+  };
+
   const ProductCard = ({ product }: { product: typeof mockResults[0] }) => (
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group">
       <div className="relative">
@@ -141,6 +158,7 @@ const SearchResults: React.FC = () => {
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
             disabled={!product.inStock}
+            onClick={() => handleAddToCart(product)}
           >
             {language === 'ar' ? 'أضف للسلة' : 'Add to Cart'}
           </button>
